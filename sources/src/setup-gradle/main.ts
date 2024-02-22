@@ -1,10 +1,10 @@
-import * as core from '@actions/core'
-
 import * as setupGradle from '../setup-gradle'
 import * as execution from '../execution'
 import * as provisioner from '../provision'
 import * as layout from '../repository-layout'
 import * as params from '../input-params'
+import logger from '../logger'
+import state from '../state'
 
 /**
  * The main entry point for the action, called by Github Actions for the step.
@@ -24,9 +24,9 @@ export async function run(): Promise<void> {
             await execution.executeGradleBuild(executable, buildRootDirectory, args)
         }
     } catch (error) {
-        core.setFailed(String(error))
+        logger.error(String(error))
         if (error instanceof Error && error.stack) {
-            core.info(error.stack)
+            logger.info(error.stack)
         }
     }
 

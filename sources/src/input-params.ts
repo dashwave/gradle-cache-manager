@@ -1,5 +1,5 @@
-import * as core from '@actions/core'
 import {parseArgsStringToArgv} from 'string-argv'
+import state from './state'
 
 export function isCacheDisabled(): boolean {
     return getBooleanInput('cache-disabled')
@@ -30,37 +30,37 @@ export function isCacheCleanupEnabled(): boolean {
 }
 
 export function getCacheEncryptionKey(): string {
-    return core.getInput('cache-encryption-key')
+    return state.getInput('cache-encryption-key')
 }
 
 export function getCacheIncludes(): string[] {
-    return core.getMultilineInput('gradle-home-cache-includes')
+    return state.getMultilineInput('gradle-home-cache-includes')
 }
 
 export function getCacheExcludes(): string[] {
-    return core.getMultilineInput('gradle-home-cache-excludes')
+    return state.getMultilineInput('gradle-home-cache-excludes')
 }
 
 export function getBuildRootDirectory(): string {
-    return core.getInput('build-root-directory')
+    return state.getInput('build-root-directory')
 }
 
 export function getGradleVersion(): string {
-    return core.getInput('gradle-version')
+    return state.getInput('gradle-version')
 }
 
 export function getArguments(): string[] {
-    const input = core.getInput('arguments')
+    const input = state.getInput('arguments')
     return parseArgsStringToArgv(input)
 }
 
 // Internal parameters
 export function getJobMatrix(): string {
-    return core.getInput('workflow-job-context')
+    return state.getInput('workflow-job-context')
 }
 
 export function getGithubToken(): string {
-    return core.getInput('github-token', {required: true})
+    return state.getInput('github-token')
 }
 
 export function isJobSummaryEnabled(): boolean {
@@ -80,15 +80,15 @@ export function getBuildScanPublishEnabled(): boolean {
 }
 
 export function getBuildScanTermsOfServiceUrl(): string {
-    return core.getInput('build-scan-terms-of-service-url')
+    return state.getInput('build-scan-terms-of-service-url')
 }
 
 export function getBuildScanTermsOfServiceAgree(): string {
-    return core.getInput('build-scan-terms-of-service-agree')
+    return state.getInput('build-scan-terms-of-service-agree')
 }
 
 function parseJobSummaryOption(paramName: string): JobSummaryOption {
-    const val = core.getInput(paramName)
+    const val = state.getInput(paramName)
     switch (val.toLowerCase().trim()) {
         case 'never':
             return JobSummaryOption.Never
@@ -101,7 +101,7 @@ function parseJobSummaryOption(paramName: string): JobSummaryOption {
 }
 
 export function getDependencyGraphOption(): DependencyGraphOption {
-    const val = core.getInput('dependency-graph')
+    const val = state.getInput('dependency-graph')
     switch (val.toLowerCase().trim()) {
         case 'disabled':
             return DependencyGraphOption.Disabled
@@ -126,7 +126,7 @@ export function getDependencyGraphContinueOnFailure(): boolean {
 }
 
 export function getArtifactRetentionDays(): number {
-    const val = core.getInput('artifact-retention-days')
+    const val = state.getInput('artifact-retention-days')
     return parseNumericInput('artifact-retention-days', val, 0)
     // Zero indicates that the default repository settings should be used
 }
@@ -143,7 +143,7 @@ export function parseNumericInput(paramName: string, paramValue: string, paramDe
 }
 
 function getBooleanInput(paramName: string, paramDefault = false): boolean {
-    const paramValue = core.getInput(paramName)
+    const paramValue = state.getInput(paramName)
     switch (paramValue.toLowerCase().trim()) {
         case '':
             return paramDefault

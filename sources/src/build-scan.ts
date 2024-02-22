@@ -1,4 +1,5 @@
-import * as core from '@actions/core'
+import logger from './logger'
+import state from './state'
 import {
     getBuildScanPublishEnabled,
     getBuildScanTermsOfServiceUrl,
@@ -20,7 +21,7 @@ function verifyTermsOfServiceAgreement(): boolean {
         getBuildScanTermsOfServiceUrl() !== 'https://gradle.com/terms-of-service' ||
         getBuildScanTermsOfServiceAgree() !== 'yes'
     ) {
-        core.warning(`Terms of service must be agreed in order to publish build scans.`)
+        logger.warning(`Terms of service must be agreed in order to publish build scans.`)
         return false
     }
     return true
@@ -28,6 +29,6 @@ function verifyTermsOfServiceAgreement(): boolean {
 
 function maybeExportVariable(variableName: string, value: unknown): void {
     if (!process.env[variableName]) {
-        core.exportVariable(variableName, value)
+        state.set(variableName, value)
     }
 }

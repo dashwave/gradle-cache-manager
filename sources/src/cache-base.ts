@@ -1,7 +1,7 @@
-import * as core from '@actions/core'
+import logger from './logger'
+import state from './state'
 import * as exec from '@actions/exec'
 import * as glob from '@actions/glob'
-
 import path from 'path'
 import fs from 'fs'
 import * as params from './input-params'
@@ -33,7 +33,7 @@ export class GradleStateCache {
         // Export the GRADLE_ENCRYPTION_KEY variable if provided
         const encryptionKey = params.getCacheEncryptionKey()
         if (encryptionKey) {
-            core.exportVariable('GRADLE_ENCRYPTION_KEY', encryptionKey)
+            state.set('GRADLE_ENCRYPTION_KEY', encryptionKey)
         }
     }
 
@@ -62,18 +62,18 @@ export class GradleStateCache {
 
         const cacheResult = await restoreCache(this.getCachePath(), cacheKey.key, cacheKey.restoreKeys, entryListener)
         if (!cacheResult) {
-            core.info(`${this.cacheDescription} cache not found. Will initialize empty.`)
+            logger.info(`${this.cacheDescription} cache not found. Will initialize empty.`)
             return
         }
 
-        core.saveState(RESTORED_CACHE_KEY_KEY, cacheResult.key)
+        state.set(RESTORED_CACHE_KEY_KEY, cacheResult.key)
 
-        core.info(`Restored ${this.cacheDescription} from cache key: ${cacheResult.key}`)
+        logger.info(`Restored ${this.cacheDescription} from cache key: ${cacheResult.key}`)
 
         try {
             await this.afterRestore(listener)
         } catch (error) {
-            core.warning(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`)
+            logger.warning(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`)
         }
     }
 
@@ -96,11 +96,11 @@ export class GradleStateCache {
      */
     async save(listener: CacheListener): Promise<void> {
         const cacheKey = generateCacheKey(this.cacheName).key
-        const restoredCacheKey = core.getState(RESTORED_CACHE_KEY_KEY)
+        const restoredCacheKey = state.get(RESTORED_CACHE_KEY_KEY)
         const gradleHomeEntryListener = listener.entry(this.cacheDescription)
 
         if (restoredCacheKey && cacheKey === restoredCacheKey) {
-            core.info(`Cache hit occurred on the cache key ${cacheKey}, not saving cache.`)
+            logger.info(`Cache hit occurred on the cache key ${cacheKey}, not saving cache.`)
 
             for (const entryListener of listener.cacheEntries) {
                 if (entryListener === gradleHomeEntryListener) {
@@ -115,11 +115,11 @@ export class GradleStateCache {
         try {
             await this.beforeSave(listener)
         } catch (error) {
-            core.warning(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`)
+            logger.warning(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`)
             return
         }
 
-        core.info(`Caching ${this.cacheDescription} with cache key: ${cacheKey}`)
+        logger.info(`Caching ${this.cacheDescription} with cache key: ${cacheKey}`)
         const cachePath = this.getCachePath()
         await saveCache(cachePath, cacheKey, gradleHomeEntryListener)
 
@@ -193,7 +193,7 @@ export class GradleStateCache {
         // Copy the default toolchain definitions to `~/.m2/toolchains.xml`
         this.registerToolchains()
 
-        if (core.isDebug()) {
+        if (state.isDebug()) {
             this.configureInfoLogLevel()
         }
     }
@@ -225,7 +225,7 @@ export class GradleStateCache {
             fs.mkdirSync(m2dir, {recursive: true})
             fs.writeFileSync(toolchainXmlTarget, preInstalledToolchains)
 
-            core.info(`Wrote default JDK locations to ${toolchainXmlTarget}`)
+            logger.info(`Wrote default JDK locations to ${toolchainXmlTarget}`)
         } else {
             // Merge into an existing toolchains.xml file
             const existingToolchainContent = fs.readFileSync(toolchainXmlTarget, 'utf8')
@@ -233,7 +233,7 @@ export class GradleStateCache {
             const mergedContent = existingToolchainContent.replace('</toolchains>', appendedContent)
 
             fs.writeFileSync(toolchainXmlTarget, mergedContent)
-            core.info(`Merged default JDK locations into ${toolchainXmlTarget}`)
+            logger.info(`Merged default JDK locations into ${toolchainXmlTarget}`)
         }
     }
 
@@ -254,11 +254,11 @@ export class GradleStateCache {
         const infoProperties = `org.gradle.logging.level=info\norg.gradle.logging.stacktrace=all\n`
         const propertiesFile = path.resolve(this.gradleUserHome, 'gradle.properties')
         if (fs.existsSync(propertiesFile)) {
-            core.info(`Merged --info and --stacktrace into existing ${propertiesFile} file`)
+            logger.info(`Merged --info and --stacktrace into existing ${propertiesFile} file`)
             const existingProperties = fs.readFileSync(propertiesFile, 'utf-8')
             fs.writeFileSync(propertiesFile, `${infoProperties}\n${existingProperties}`)
         } else {
-            core.info(`Created a new ${propertiesFile} with --info and --stacktrace`)
+            logger.info(`Created a new ${propertiesFile} with --info and --stacktrace`)
             fs.writeFileSync(propertiesFile, infoProperties)
         }
     }
@@ -268,7 +268,7 @@ export class GradleStateCache {
      * this method will give a detailed report of the Gradle User Home contents.
      */
     private async debugReportGradleUserHomeSize(label: string): Promise<void> {
-        if (!isCacheDebuggingEnabled() && !core.isDebug()) {
+        if (!isCacheDebuggingEnabled() && !state.isDebug()) {
             return
         }
         if (!fs.existsSync(this.gradleUserHome)) {
@@ -280,9 +280,9 @@ export class GradleStateCache {
             ignoreReturnCode: true
         })
 
-        core.info(`Gradle User Home (directories >5M): ${label}`)
+        logger.info(`Gradle User Home (directories >5M): ${label}`)
 
-        core.info(
+        logger.info(
             result.stdout
                 .trimEnd()
                 .replace(/\t/g, '    ')
@@ -293,6 +293,6 @@ export class GradleStateCache {
                 .join('\n')
         )
 
-        core.info('-----------------------')
+        logger.info('-----------------------')
     }
 }

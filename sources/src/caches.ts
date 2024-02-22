@@ -1,4 +1,3 @@
-import * as core from '@actions/core'
 import {
     isCacheCleanupEnabled,
     isCacheDisabled,
@@ -10,21 +9,23 @@ import {CacheListener} from './cache-reporting'
 import {DaemonController} from './daemon-controller'
 import {GradleStateCache} from './cache-base'
 import {CacheCleaner} from './cache-cleaner'
+import logger from './logger'
+import state from './state'
 
 const CACHE_RESTORED_VAR = 'GRADLE_BUILD_ACTION_CACHE_RESTORED'
 
 export async function restore(userHome: string, gradleUserHome: string, cacheListener: CacheListener): Promise<void> {
     // Bypass restore cache on all but first action step in workflow.
     if (process.env[CACHE_RESTORED_VAR]) {
-        core.info('Cache only restored on first action step.')
+        logger.info('Cache only restored on first action step.')
         return
     }
-    core.exportVariable(CACHE_RESTORED_VAR, true)
+    state.set(CACHE_RESTORED_VAR, true)
 
     const gradleStateCache = new GradleStateCache(userHome, gradleUserHome)
 
     if (isCacheDisabled()) {
-        core.info('Cache is disabled: will not restore state from previous builds.')
+        logger.info('Cache is disabled: will not restore state from previous builds.')
         // Initialize the Gradle User Home even when caching is disabled.
         gradleStateCache.init()
         cacheListener.cacheDisabled = true
@@ -33,32 +34,31 @@ export async function restore(userHome: string, gradleUserHome: string, cacheLis
 
     if (gradleStateCache.cacheOutputExists()) {
         if (!isCacheOverwriteExisting()) {
-            core.info('Gradle User Home already exists: will not restore from cache.')
+            logger.info('Gradle User Home already exists: will not restore from cache.')
             // Initialize pre-existing Gradle User Home.
             gradleStateCache.init()
             cacheListener.cacheDisabled = true
             cacheListener.cacheDisabledReason = 'disabled due to pre-existing Gradle User Home'
             return
         }
-        core.info('Gradle User Home already exists: will overwrite with cached contents.')
+        logger.info('Gradle User Home already exists: will overwrite with cached contents.')
     }
 
     gradleStateCache.init()
     // Mark the state as restored so that post-action will perform save.
-    core.saveState(CACHE_RESTORED_VAR, true)
+    state.set(CACHE_RESTORED_VAR, true)
 
     if (isCacheWriteOnly()) {
-        core.info('Cache is write-only: will not restore from cache.')
+        logger.info('Cache is write-only: will not restore from cache.')
         cacheListener.cacheWriteOnly = true
         return
     }
 
-    await core.group('Restore Gradle state from cache', async () => {
-        await gradleStateCache.restore(cacheListener)
-    })
+    await gradleStateCache.restore(cacheListener)
+
 
     if (isCacheCleanupEnabled() && !isCacheReadOnly()) {
-        core.info('Preparing cache for cleanup.')
+        logger.info('Preparing cache for cleanup.')
         const cacheCleaner = new CacheCleaner(gradleUserHome, process.env['RUNNER_TEMP']!)
         await cacheCleaner.prepare()
     }
@@ -71,17 +71,17 @@ export async function save(
     daemonController: DaemonController
 ): Promise<void> {
     if (isCacheDisabled()) {
-        core.info('Cache is disabled: will not save state for later builds.')
+        logger.info('Cache is disabled: will not save state for later builds.')
         return
     }
 
-    if (!core.getState(CACHE_RESTORED_VAR)) {
-        core.info('Cache will not be saved: not restored in main action step.')
+    if (!state.get(CACHE_RESTORED_VAR)) {
+        logger.info('Cache will not be saved: not restored in main action step.')
         return
     }
 
     if (isCacheReadOnly()) {
-        core.info('Cache is read-only: will not save state for use in subsequent builds.')
+        logger.info('Cache is read-only: will not save state for use in subsequent builds.')
         cacheListener.cacheReadOnly = true
         return
     }
@@ -89,16 +89,14 @@ export async function save(
     await daemonController.stopAllDaemons()
 
     if (isCacheCleanupEnabled()) {
-        core.info('Forcing cache cleanup.')
+        logger.info('Forcing cache cleanup.')
         const cacheCleaner = new CacheCleaner(gradleUserHome, process.env['RUNNER_TEMP']!)
         try {
             await cacheCleaner.forceCleanup()
         } catch (e) {
-            core.warning(`Cache cleanup failed. Will continue. ${String(e)}`)
+            logger.warning(`Cache cleanup failed. Will continue. ${String(e)}`)
         }
     }
 
-    await core.group('Caching Gradle state', async () => {
-        return new GradleStateCache(userHome, gradleUserHome).save(cacheListener)
-    })
+    return new GradleStateCache(userHome, gradleUserHome).save(cacheListener)
 }

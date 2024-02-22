@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs'
-import * as core from '@actions/core'
+import logger from './logger'
 import * as glob from '@actions/glob'
 import * as semver from 'semver'
 
@@ -104,7 +104,7 @@ abstract class AbstractEntryExtractor {
             // Handle case where the extracted-cache-entry definitions have been changed
             const skipRestore = process.env[SKIP_RESTORE_VAR] || ''
             if (skipRestore.includes(artifactType)) {
-                core.info(`Not restoring extracted cache entry for ${artifactType}`)
+                logger.info(`Not restoring extracted cache entry for ${artifactType}`)
                 entryListener.markRequested('SKIP_RESTORE')
             } else {
                 processes.push(
@@ -131,10 +131,10 @@ abstract class AbstractEntryExtractor {
     ): Promise<ExtractedCacheEntry> {
         const restoredEntry = await restoreCache([pattern], cacheKey, [], listener)
         if (restoredEntry) {
-            core.info(`Restored ${artifactType} with key ${cacheKey} to ${pattern}`)
+            logger.info(`Restored ${artifactType} with key ${cacheKey} to ${pattern}`)
             return new ExtractedCacheEntry(artifactType, pattern, cacheKey)
         } else {
-            core.info(`Did not restore ${artifactType} with key ${cacheKey} to ${pattern}`)
+            logger.info(`Did not restore ${artifactType} with key ${cacheKey} to ${pattern}`)
             return new ExtractedCacheEntry(artifactType, pattern, undefined)
         }
     }
@@ -229,7 +229,7 @@ abstract class AbstractEntryExtractor {
             cacheDebug(`No change to previously restored ${artifactType}. Not saving.`)
             entryListener.markNotSaved('contents unchanged')
         } else {
-            core.info(`Caching ${artifactType} with path '${pattern}' and cache key: ${cacheKey}`)
+            logger.info(`Caching ${artifactType} with path '${pattern}' and cache key: ${cacheKey}`)
             await saveCache([pattern], cacheKey, entryListener)
         }
 
@@ -388,7 +388,7 @@ export class ConfigurationCacheEntryExtractor extends AbstractEntryExtractor {
     private markNotRestored(listener: CacheListener, reason: string): void {
         const cacheEntries = this.loadExtractedCacheEntries()
         if (cacheEntries.length > 0) {
-            core.info(`Not restoring configuration-cache state, as ${reason}`)
+            logger.info(`Not restoring configuration-cache state, as ${reason}`)
             for (const cacheEntry of cacheEntries) {
                 listener.entry(cacheEntry.pattern).markNotRestored(reason)
             }
@@ -402,7 +402,7 @@ export class ConfigurationCacheEntryExtractor extends AbstractEntryExtractor {
         if (!params.getCacheEncryptionKey()) {
             const cacheEntryDefinitions = this.getExtractedCacheEntryDefinitions()
             if (cacheEntryDefinitions.length > 0) {
-                core.info('Not saving configuration-cache state, as no encryption key was provided')
+                logger.info('Not saving configuration-cache state, as no encryption key was provided')
                 for (const cacheEntry of cacheEntryDefinitions) {
                     listener.entry(cacheEntry.pattern).markNotSaved('No encryption key provided')
                 }
@@ -435,7 +435,7 @@ export class ConfigurationCacheEntryExtractor extends AbstractEntryExtractor {
                     return gradleVersion && semver.lt(gradleVersion, '8.6.0')
                 })
             ) {
-                core.info(
+                logger.info(
                     `Not saving config-cache data for ${configCachePath}. Configuration cache data is only saved for Gradle 8.6+`
                 )
                 definition.notCacheableBecause('Configuration cache data only saved for Gradle 8.6+')

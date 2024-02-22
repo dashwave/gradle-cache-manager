@@ -2,13 +2,14 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as httpm from '@actions/http-client'
-import * as core from '@actions/core'
 import * as cache from '@actions/cache'
 import * as toolCache from '@actions/tool-cache'
 
 import * as gradlew from './gradlew'
 import * as params from './input-params'
 import {handleCacheFailure, isCacheDisabled, isCacheReadOnly} from './cache-utils'
+import logger from './logger'
+import state from './state'
 
 const gradleVersionsBaseUrl = 'https://services.gradle.org/versions'
 
@@ -26,13 +27,13 @@ export async function provisionGradle(): Promise<string | undefined> {
 }
 
 async function addToPath(executable: string): Promise<string> {
-    core.addPath(path.dirname(executable))
+    state.addPath(path.dirname(executable))
     return executable
 }
 
 async function installGradle(version: string): Promise<string> {
     const versionInfo = await resolveGradleVersion(version)
-    core.setOutput('gradle-version', versionInfo.version)
+    state.setOutput('gradle-version', versionInfo.version)
     return installGradleVersion(versionInfo)
 }
 
@@ -41,7 +42,7 @@ async function resolveGradleVersion(version: string): Promise<GradleVersionInfo>
         case 'current':
             return gradleCurrent()
         case 'rc':
-            core.warning(`Specifying gradle-version 'rc' has been deprecated. Use 'release-candidate' instead.`)
+            logger.warning(`Specifying gradle-version 'rc' has been deprecated. Use 'release-candidate' instead.`)
             return gradleReleaseCandidate()
         case 'release-candidate':
             return gradleReleaseCandidate()
@@ -63,7 +64,7 @@ async function gradleReleaseCandidate(): Promise<GradleVersionInfo> {
     if (versionInfo && versionInfo.version && versionInfo.downloadUrl) {
         return versionInfo
     }
-    core.info('No current release-candidate found, will fallback to current')
+    logger.info('No current release-candidate found, will fallback to current')
     return gradleCurrent()
 }
 
@@ -95,26 +96,25 @@ async function findGradleVersionDeclaration(version: string): Promise<GradleVers
 }
 
 async function installGradleVersion(versionInfo: GradleVersionInfo): Promise<string> {
-    return core.group(`Provision Gradle ${versionInfo.version}`, async () => {
-        return locateGradleAndDownloadIfRequired(versionInfo)
-    })
+    logger.info(`Provisioning Gradle ${versionInfo.version}`)
+    return locateGradleAndDownloadIfRequired(versionInfo)
 }
 
 async function locateGradleAndDownloadIfRequired(versionInfo: GradleVersionInfo): Promise<string> {
     const installsDir = path.join(os.homedir(), 'gradle-installations/installs')
     const installDir = path.join(installsDir, `gradle-${versionInfo.version}`)
     if (fs.existsSync(installDir)) {
-        core.info(`Gradle installation already exists at ${installDir}`)
+        logger.info(`Gradle installation already exists at ${installDir}`)
         return executableFrom(installDir)
     }
 
     const downloadPath = await downloadAndCacheGradleDistribution(versionInfo)
     await toolCache.extractZip(downloadPath, installsDir)
-    core.info(`Extracted Gradle ${versionInfo.version} to ${installDir}`)
+    logger.info(`Extracted Gradle ${versionInfo.version} to ${installDir}`)
 
     const executable = executableFrom(installDir)
     fs.chmodSync(executable, '755')
-    core.info(`Provisioned Gradle executable ${executable}`)
+    logger.info(`Provisioned Gradle executable ${executable}`)
 
     return executable
 }
@@ -131,14 +131,14 @@ async function downloadAndCacheGradleDistribution(versionInfo: GradleVersionInfo
     try {
         const restoreKey = await cache.restoreCache([downloadPath], cacheKey)
         if (restoreKey) {
-            core.info(`Restored Gradle distribution ${cacheKey} from cache to ${downloadPath}`)
+            logger.info(`Restored Gradle distribution ${cacheKey} from cache to ${downloadPath}`)
             return downloadPath
         }
     } catch (error) {
         handleCacheFailure(error, `Restore Gradle distribution ${versionInfo.version} failed`)
     }
 
-    core.info(`Gradle distribution ${versionInfo.version} not found in cache. Will download.`)
+    logger.info(`Gradle distribution ${versionInfo.version} not found in cache. Will download.`)
     await downloadGradleDistribution(versionInfo, downloadPath)
 
     if (!isCacheReadOnly()) {
@@ -153,7 +153,7 @@ async function downloadAndCacheGradleDistribution(versionInfo: GradleVersionInfo
 
 async function downloadGradleDistribution(versionInfo: GradleVersionInfo, downloadPath: string): Promise<void> {
     await toolCache.downloadTool(versionInfo.downloadUrl, downloadPath)
-    core.info(`Downloaded ${versionInfo.downloadUrl} to ${downloadPath} (size ${fs.statSync(downloadPath).size})`)
+    logger.info(`Downloaded ${versionInfo.downloadUrl} to ${downloadPath} (size ${fs.statSync(downloadPath).size})`)
 }
 
 function executableFrom(installDir: string): string {

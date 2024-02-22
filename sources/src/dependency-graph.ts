@@ -1,10 +1,11 @@
-import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as glob from '@actions/glob'
 import {DefaultArtifactClient} from '@actions/artifact'
 import {GitHub} from '@actions/github/lib/utils'
 import {RequestError} from '@octokit/request-error'
 import type {PullRequestEvent} from '@octokit/webhooks-types'
+import logger from './logger'
+import state from './state'
 
 import * as path from 'path'
 import fs from 'fs'
@@ -30,7 +31,7 @@ export async function setup(option: DependencyGraphOption): Promise<void> {
         return
     }
 
-    core.info('Enabling dependency graph generation')
+    logger.info('Enabling dependency graph generation')
     maybeExportVariable('GITHUB_DEPENDENCY_GRAPH_ENABLED', 'true')
     maybeExportVariable('GITHUB_DEPENDENCY_GRAPH_CONTINUE_ON_FAILURE', getDependencyGraphContinueOnFailure())
     maybeExportVariable('GITHUB_DEPENDENCY_GRAPH_JOB_CORRELATOR', getJobCorrelator())
@@ -45,14 +46,14 @@ export async function setup(option: DependencyGraphOption): Promise<void> {
 
     // To clear the dependency graph, we generate an empty graph by excluding all projects and configurations
     if (option === DependencyGraphOption.Clear) {
-        core.exportVariable('DEPENDENCY_GRAPH_INCLUDE_PROJECTS', '')
-        core.exportVariable('DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS', '')
+        state.set('DEPENDENCY_GRAPH_INCLUDE_PROJECTS', '')
+        state.set('DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS', '')
     }
 }
 
 function maybeExportVariable(variableName: string, value: unknown): void {
     if (!process.env[variableName]) {
-        core.exportVariable(variableName, value)
+        state.set(variableName, value)
     }
 }
 
@@ -86,7 +87,7 @@ async function uploadDependencyGraphs(dependencyGraphFiles: string[]): Promise<v
     const artifactClient = new DefaultArtifactClient()
     for (const dependencyGraphFile of dependencyGraphFiles) {
         const relativePath = getRelativePathFromWorkspace(dependencyGraphFile)
-        core.info(`Uploading dependency graph file: ${relativePath}`)
+        logger.info(`Uploading dependency graph file: ${relativePath}`)
         const artifactName = `${DEPENDENCY_GRAPH_PREFIX}${path.basename(dependencyGraphFile)}`
         await artifactClient.uploadArtifact(artifactName, [dependencyGraphFile], workspaceDirectory, {
             retentionDays: getArtifactRetentionDays()
@@ -138,7 +139,7 @@ async function submitDependencyGraphFile(jsonFile: string): Promise<void> {
     const response = await octokit.request('POST /repos/{owner}/{repo}/dependency-graph/snapshots', jsonObject)
 
     const relativeJsonFile = getRelativePathFromWorkspace(jsonFile)
-    core.notice(`Submitted ${relativeJsonFile}: ${response.data.message}`)
+    // core.notice(`Submitted ${relativeJsonFile}: ${response.data.message}`)
 }
 
 async function downloadDependencyGraphs(): Promise<string[]> {
@@ -168,7 +169,7 @@ async function downloadDependencyGraphs(): Promise<string[]> {
             path: downloadPath,
             findBy
         })
-        core.info(`Downloading dependency-graph artifact ${artifact.name} to ${downloadedArtifact.downloadPath}`)
+        logger.info(`Downloading dependency-graph artifact ${artifact.name} to ${downloadedArtifact.downloadPath}`)
     }
 
     return findDependencyGraphFiles(downloadPath)
@@ -185,7 +186,7 @@ function warnOrFail(option: String, error: unknown): void {
         throw new PostActionJobFailure(error)
     }
 
-    core.warning(`Failed to ${option} dependency graph. Will continue.\n${String(error)}`)
+    logger.warning(`Failed to ${option} dependency graph. Will continue.\n${String(error)}`)
 }
 
 function getOctokit(): InstanceType<typeof GitHub> {
@@ -193,7 +194,7 @@ function getOctokit(): InstanceType<typeof GitHub> {
 }
 
 function getGithubToken(): string {
-    return core.getInput('github-token', {required: true})
+    return state.get('github-token')
 }
 
 function getRelativePathFromWorkspace(file: string): string {
@@ -231,7 +232,7 @@ export function constructJobCorrelator(workflow: string, jobId: string, matrixJs
 }
 
 function describeMatrix(matrixJson: string): string {
-    core.debug(`Got matrix json: ${matrixJson}`)
+    logger.debug(`Got matrix json: ${matrixJson}`)
     const matrix = JSON.parse(matrixJson)
     if (matrix) {
         return Object.values(matrix).join('-')

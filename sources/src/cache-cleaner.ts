@@ -1,8 +1,8 @@
-import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as glob from '@actions/glob'
 import fs from 'fs'
 import path from 'path'
+import logger from './logger'
 
 export class CacheCleaner {
     private readonly gradleUserHome: string
@@ -49,12 +49,12 @@ export class CacheCleaner {
     }
 
     private async ageAllFiles(fileName = '*'): Promise<void> {
-        core.debug(`Aging all files in Gradle User Home with name ${fileName}`)
+        logger.debug(`Aging all files in Gradle User Home with name ${fileName}`)
         await this.setUtimes(`${this.gradleUserHome}/**/${fileName}`, new Date(0))
     }
 
     private async touchAllFiles(fileName = '*'): Promise<void> {
-        core.debug(`Touching all files in Gradle User Home with name ${fileName}`)
+        logger.debug(`Touching all files in Gradle User Home with name ${fileName}`)
         await this.setUtimes(`${this.gradleUserHome}/**/${fileName}`, new Date())
     }
 

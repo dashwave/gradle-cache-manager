@@ -1,4 +1,3 @@
-import * as core from '@actions/core'
 import * as cache from '@actions/cache'
 import * as github from '@actions/github'
 import * as exec from '@actions/exec'
@@ -10,6 +9,7 @@ import * as fs from 'fs'
 import * as params from './input-params'
 
 import {CacheEntryListener} from './cache-reporting'
+import logger from './logger'
 
 const CACHE_PROTOCOL_VERSION = 'v9-'
 
@@ -186,9 +186,9 @@ export async function saveCache(cachePath: string[], cacheKey: string, listener:
 
 export function cacheDebug(message: string): void {
     if (isCacheDebuggingEnabled()) {
-        core.info(message)
+        logger.info(message)
     } else {
-        core.debug(message)
+        logger.debug(message)
     }
 }
 
@@ -199,10 +199,10 @@ export function handleCacheFailure(error: unknown, message: string): void {
     }
     if (error instanceof cache.ReserveCacheError) {
         // Reserve cache errors are expected if the artifact has been previously cached
-        core.info(`${message}: ${error}`)
+        logger.info(`${message}: ${error}`)
     } else {
         // Warn on all other errors
-        core.warning(`${message}: ${error}`)
+        logger.warning(`${message}: ${error}`)
         if (error instanceof Error && error.stack) {
             cacheDebug(error.stack)
         }
@@ -228,7 +228,7 @@ export async function tryDelete(file: string): Promise<void> {
             return
         } catch (error) {
             if (attempt === maxAttempts) {
-                core.warning(`Failed to delete ${file}, which will impact caching. 
+                logger.warning(`Failed to delete ${file}, which will impact caching. 
 It is likely locked by another process. Output of 'jps -ml':
 ${await getJavaProcesses()}`)
                 throw error

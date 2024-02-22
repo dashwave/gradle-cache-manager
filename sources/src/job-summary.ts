@@ -1,7 +1,8 @@
-import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {SUMMARY_ENV_VAR} from '@actions/core/lib/summary'
 import {RequestError} from '@octokit/request-error'
+import logger from './logger'
+import summary from './summary'
 
 import * as params from './input-params'
 import {BuildResult} from './build-results'
@@ -12,17 +13,17 @@ export async function generateJobSummary(buildResults: BuildResult[], cacheListe
     const cachingReport = generateCachingReport(cacheListener)
 
     if (shouldGenerateJobSummary(buildResults)) {
-        core.info('Generating Job Summary')
+        logger.info('Generating Job Summary')
 
-        core.summary.addRaw(summaryTable)
-        core.summary.addRaw(cachingReport)
-        await core.summary.write()
+        summary.addRaw(summaryTable)
+        summary.addRaw(cachingReport)
+        await summary.write()
     } else {
-        core.info('============================')
-        core.info(summaryTable)
-        core.info('============================')
-        core.info(cachingReport)
-        core.info('============================')
+        logger.info('============================')
+        logger.info(summaryTable)
+        logger.info('============================')
+        logger.info(cachingReport)
+        logger.info('============================')
     }
 
     if (shouldAddPRComment(buildResults)) {
@@ -33,12 +34,12 @@ export async function generateJobSummary(buildResults: BuildResult[], cacheListe
 async function addPRComment(jobSummary: string): Promise<void> {
     const context = github.context
     if (context.payload.pull_request == null) {
-        core.info('No pull_request trigger: not adding PR comment')
+        logger.info('No pull_request trigger: not adding PR comment')
         return
     }
 
     const pull_request_number = context.payload.pull_request.number
-    core.info(`Adding Job Summary as comment to PR #${pull_request_number}.`)
+    logger.info(`Adding Job Summary as comment to PR #${pull_request_number}.`)
 
     const prComment = `<h3>Job Summary for Gradle</h3>
 <a href="${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}" target="_blank">
@@ -57,7 +58,7 @@ ${jobSummary}`
         })
     } catch (error) {
         if (error instanceof RequestError) {
-            core.warning(buildWarningMessage(error))
+            logger.warning(buildWarningMessage(error))
         } else {
             throw error
         }
@@ -153,7 +154,7 @@ function shouldAddJobSummary(option: params.JobSummaryOption, buildResults: Buil
         case params.JobSummaryOption.Never:
             return false
         case params.JobSummaryOption.OnFailure:
-            core.info(`Got these build results: ${JSON.stringify(buildResults)}`)
+            logger.info(`Got these build results: ${JSON.stringify(buildResults)}`)
             return buildResults.some(result => result.buildFailed)
     }
 }
