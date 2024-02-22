@@ -1,18 +1,19 @@
-import * as exec from '@actions/exec'
+import * as exec from './exec'
 import * as path from 'path'
 import * as os from 'os'
 import * as caches from './caches'
 import * as layout from './repository-layout'
 import * as params from './input-params'
-import * as dependencyGraph from './dependency-graph'
+// import * as dependencyGraph from './dependency-graph'
 import * as jobSummary from './job-summary'
-import * as buildScan from './build-scan'
+// import * as buildScan from './build-scan'
 import state from './state'
 import logger from './logger'
 
 import {loadBuildResults} from './build-results'
 import {CacheListener} from './cache-reporting'
 import {DaemonController} from './daemon-controller'
+import { log } from 'console'
 
 const GRADLE_SETUP_VAR = 'GRADLE_BUILD_ACTION_SETUP_COMPLETED'
 const USER_HOME = 'USER_HOME'
@@ -23,8 +24,10 @@ export async function setup(): Promise<void> {
     const userHome = await determineUserHome()
     const gradleUserHome = await determineGradleUserHome()
 
+    logger.info(`Using Gradle User Home: ${gradleUserHome}`)
+    logger.info(`Using User Home: ${userHome}`)
     // Bypass setup on all but first action step in workflow.
-    if (process.env[GRADLE_SETUP_VAR]) {
+    if (process.env[GRADLE_SETUP_VAR]!) {
         logger.info('Gradle setup only performed on first gradle/actions step in workflow.')
         return
     }
@@ -37,14 +40,17 @@ export async function setup(): Promise<void> {
     state.set(USER_HOME, userHome)
     state.set(GRADLE_USER_HOME, gradleUserHome)
 
+    logger.info("Setting up new cache listener")
     const cacheListener = new CacheListener()
+
+    logger.info("Restoring cache")
     await caches.restore(userHome, gradleUserHome, cacheListener)
 
     state.set(CACHE_LISTENER, cacheListener.stringify())
 
-    await dependencyGraph.setup(params.getDependencyGraphOption())
+    // await dependencyGraph.setup(params.getDependencyGraphOption())
 
-    buildScan.setup()
+    // buildScan.setup()
 }
 
 export async function complete(): Promise<void> {
@@ -65,15 +71,16 @@ export async function complete(): Promise<void> {
 
     await jobSummary.generateJobSummary(buildResults, cacheListener)
 
-    await dependencyGraph.complete(params.getDependencyGraphOption())
+    // await dependencyGraph.complete(params.getDependencyGraphOption())
 
     logger.info('Completed post-action step')
 }
 
 async function determineGradleUserHome(): Promise<string> {
-    const customGradleUserHome = process.env['GRADLE_USER_HOME']
+    // const customGradleUserHome = process.env['GRADLE_USER_HOME']
+    const customGradleUserHome = params.getGradleUserHome()
     if (customGradleUserHome) {
-        const rootDir = layout.workspaceDirectory()
+        const rootDir = "/Users/burnerlee/Projects/random/topcorn"
         return path.resolve(rootDir, customGradleUserHome)
     }
 

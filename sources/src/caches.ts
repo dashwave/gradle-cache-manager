@@ -44,6 +44,7 @@ export async function restore(userHome: string, gradleUserHome: string, cacheLis
         logger.info('Gradle User Home already exists: will overwrite with cached contents.')
     }
 
+    logger.info("initialising gradle state cache")
     gradleStateCache.init()
     // Mark the state as restored so that post-action will perform save.
     state.set(CACHE_RESTORED_VAR, true)
@@ -54,8 +55,8 @@ export async function restore(userHome: string, gradleUserHome: string, cacheLis
         return
     }
 
+    logger.info('Restoring cache from remote')
     await gradleStateCache.restore(cacheListener)
-
 
     if (isCacheCleanupEnabled() && !isCacheReadOnly()) {
         logger.info('Preparing cache for cleanup.')

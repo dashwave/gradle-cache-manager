@@ -5,6 +5,7 @@ import * as layout from '../repository-layout'
 import * as params from '../input-params'
 import logger from '../logger'
 import state from '../state'
+import { log } from 'console'
 
 /**
  * The main entry point for the action, called by Github Actions for the step.
@@ -14,15 +15,16 @@ export async function run(): Promise<void> {
         // Configure Gradle environment (Gradle User Home)
         await setupGradle.setup()
 
-        // Download and install Gradle if required
-        const executable = await provisioner.provisionGradle()
+        // // Download and install Gradle if required
+        // logger.info('Provisioning Gradle')
+        // const executable = await provisioner.provisionGradle()
 
-        // Only execute if arguments have been provided
-        const args: string[] = params.getArguments()
-        if (args.length > 0) {
-            const buildRootDirectory = layout.buildRootDirectory()
-            await execution.executeGradleBuild(executable, buildRootDirectory, args)
-        }
+        // // Only execute if arguments have been provided
+        // const args: string[] = params.getArguments()
+        // if (args.length > 0) {
+        //     const buildRootDirectory = layout.buildRootDirectory()
+        //     await execution.executeGradleBuild(executable, buildRootDirectory, args)
+        // }
     } catch (error) {
         logger.error(String(error))
         if (error instanceof Error && error.stack) {

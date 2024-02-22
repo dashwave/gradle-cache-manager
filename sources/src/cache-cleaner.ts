@@ -1,5 +1,5 @@
-import * as exec from '@actions/exec'
-import * as glob from '@actions/glob'
+import * as exec from './exec'
+import * as glob from './glob'
 import fs from 'fs'
 import path from 'path'
 import logger from './logger'

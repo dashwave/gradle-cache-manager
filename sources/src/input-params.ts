@@ -1,5 +1,6 @@
 import {parseArgsStringToArgv} from 'string-argv'
 import state from './state'
+import logger from './logger'
 
 export function isCacheDisabled(): boolean {
     return getBooleanInput('cache-disabled')
@@ -87,6 +88,9 @@ export function getBuildScanTermsOfServiceAgree(): string {
     return state.getInput('build-scan-terms-of-service-agree')
 }
 
+export function getGradleUserHome(): string {
+    return state.getInput('gradle-user-home') || "build-cache"
+}
 function parseJobSummaryOption(paramName: string): JobSummaryOption {
     const val = state.getInput(paramName)
     switch (val.toLowerCase().trim()) {
@@ -144,6 +148,7 @@ export function parseNumericInput(paramName: string, paramValue: string, paramDe
 
 function getBooleanInput(paramName: string, paramDefault = false): boolean {
     const paramValue = state.getInput(paramName)
+    logger.info(`Input: ${paramName} = ${paramValue}`)
     switch (paramValue.toLowerCase().trim()) {
         case '':
             return paramDefault

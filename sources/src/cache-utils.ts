@@ -1,6 +1,6 @@
-import * as cache from '@actions/cache'
+import * as cache from './s3-cache/cache'
 import * as github from '@actions/github'
-import * as exec from '@actions/exec'
+import * as exec from './exec'
 
 import * as crypto from 'crypto'
 import * as path from 'path'
@@ -81,25 +81,26 @@ export class CacheKey {
  * - Any previous key for this cache on the current OS
  */
 export function generateCacheKey(cacheName: string): CacheKey {
-    const cacheKeyBase = `${getCacheKeyPrefix()}${CACHE_PROTOCOL_VERSION}${cacheName}`
+    return new CacheKey("aviral", [])
+    // const cacheKeyBase = `${getCacheKeyPrefix()}${CACHE_PROTOCOL_VERSION}${cacheName}`
 
-    // At the most general level, share caches for all executions on the same OS
-    const cacheKeyForEnvironment = `${cacheKeyBase}|${getCacheKeyEnvironment()}`
+    // // At the most general level, share caches for all executions on the same OS
+    // const cacheKeyForEnvironment = `${cacheKeyBase}|${getCacheKeyEnvironment()}`
 
-    // Then prefer caches that run job with the same ID
-    const cacheKeyForJob = `${cacheKeyForEnvironment}|${getCacheKeyJob()}`
+    // // Then prefer caches that run job with the same ID
+    // const cacheKeyForJob = `${cacheKeyForEnvironment}|${getCacheKeyJob()}`
 
-    // Prefer (even more) jobs that run this job in the same workflow with the same context (matrix)
-    const cacheKeyForJobContext = `${cacheKeyForJob}[${getCacheKeyJobInstance()}]`
+    // // Prefer (even more) jobs that run this job in the same workflow with the same context (matrix)
+    // const cacheKeyForJobContext = `${cacheKeyForJob}[${getCacheKeyJobInstance()}]`
 
-    // Exact match on Git SHA
-    const cacheKey = `${cacheKeyForJobContext}-${getCacheKeyJobExecution()}`
+    // // Exact match on Git SHA
+    // const cacheKey = `${cacheKeyForJobContext}-${getCacheKeyJobExecution()}`
 
-    if (params.isCacheStrictMatch()) {
-        return new CacheKey(cacheKey, [cacheKeyForJobContext])
-    }
+    // if (params.isCacheStrictMatch()) {
+    //     return new CacheKey(cacheKey, [cacheKeyForJobContext])
+    // }
 
-    return new CacheKey(cacheKey, [cacheKeyForJobContext, cacheKeyForJob, cacheKeyForEnvironment])
+    // return new CacheKey(cacheKey, [cacheKeyForJobContext, cacheKeyForJob, cacheKeyForEnvironment])
 }
 
 export function getCacheKeyPrefix(): string {
@@ -154,11 +155,7 @@ export async function restoreCache(
 ): Promise<cache.CacheEntry | undefined> {
     listener.markRequested(cacheKey, cacheRestoreKeys)
     try {
-        // Only override the read timeout if the SEGMENT_DOWNLOAD_TIMEOUT_MINS env var has NOT been set
-        const cacheRestoreOptions = process.env[SEGMENT_DOWNLOAD_TIMEOUT_VAR]
-            ? {}
-            : {segmentTimeoutInMs: SEGMENT_DOWNLOAD_TIMEOUT_DEFAULT}
-        const restoredEntry = await cache.restoreCache(cachePath, cacheKey, cacheRestoreKeys, cacheRestoreOptions)
+        const restoredEntry = await cache.restoreCache(cachePath, cacheKey, cacheRestoreKeys)
         if (restoredEntry !== undefined) {
             listener.markRestored(restoredEntry.key, restoredEntry.size)
         }

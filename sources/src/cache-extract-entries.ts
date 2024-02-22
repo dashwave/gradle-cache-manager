@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import logger from './logger'
-import * as glob from '@actions/glob'
+import * as glob from './glob'
 import * as semver from 'semver'
 
 import * as params from './input-params'
@@ -321,7 +321,7 @@ export class GradleHomeEntryExtractor extends AbstractEntryExtractor {
      */
     private async deleteWrapperZips(): Promise<void> {
         const wrapperZips = path.resolve(this.gradleUserHome, 'wrapper/dists/*/*/*.zip')
-        const globber = await glob.create(wrapperZips, {
+        const globber = await glob.create([wrapperZips], {
             implicitDescendants: false
         })
 

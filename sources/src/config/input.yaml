@@ -1,0 +1,19 @@
+inputs:
+  # gradle-version: 8.2
+  cache-disabled: "false"
+  cache-read-only: "false"
+  cache-write-only: "false"
+  cache-overwrite-existing: "false"
+  # cache-encryption-key: ""
+  gradle-home-cache-includes:
+    - caches
+    - notifications
+  gradle-home-cache-excludes:
+    - caches/build-cache-1
+  gradle-home-cache-cleanup: "false"
+  add-job-summary: never
+  add-job-summary-as-pr-comment: never
+  dependency-graph: disabled
+  dependency-graph-continue-on-failure: "false"
+  gradle-user-home: "build-cache"
+  

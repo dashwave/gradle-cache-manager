@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
         }
     }
 
-    // Explicit process.exit() to prevent waiting for promises left hanging by `@actions/cache` on save.
+    // Explicit process.exit() to prevent waiting for promises left hanging by `s3-cache/cache` on save.
     process.exit()
 }
 

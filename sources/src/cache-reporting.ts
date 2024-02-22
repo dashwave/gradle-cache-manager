@@ -1,4 +1,4 @@
-import * as cache from '@actions/cache'
+import * as cache from './s3-cache/cache'
 
 /**
  * Collects information on what entries were saved and restored during the action.
