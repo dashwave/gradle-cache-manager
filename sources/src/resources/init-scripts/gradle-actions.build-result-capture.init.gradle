@@ -55,7 +55,7 @@ def captureUsingBuildScanPublished(buildScanExtension, rootProject, invocationId
             buildResults.setBuildScanUri(buildScan.buildScanUri.toASCIIString())
             buildResults.writeToResultsFile(true)
 
-            def githubOutput = System.getenv("GITHUB_OUTPUT")
+            def githubOutput = "github-output"
             if (githubOutput) {
                 new File(githubOutput) << "build-scan-url=${buildScan.buildScanUri}\n"
             } else {
@@ -116,8 +116,8 @@ class BuildResults {
     }
 
     def writeToResultsFile(boolean overwrite) {
-        def runnerTempDir = System.getenv("RUNNER_TEMP")
-        def githubActionStep = System.getenv("GITHUB_ACTION")
+        def runnerTempDir = "/Users/burnerlee/temp-dir"
+        def githubActionStep = "github-action"
         if (!runnerTempDir || !githubActionStep) {
             return
         }

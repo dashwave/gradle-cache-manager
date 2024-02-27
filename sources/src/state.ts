@@ -29,7 +29,7 @@ class AppState {
     }
 
     public get(key: string): any {
-        return this.state[key]
+        return this.state[key] || ""
     }
 
     public set(key: string, value: any): void {
@@ -47,6 +47,7 @@ class AppState {
     }
 
     public getInput(key: string): string {
+        logger.info(`Getting input for key: ${key} - ${this.inputs[key]}`);
         return this.inputs[key]
     }
 

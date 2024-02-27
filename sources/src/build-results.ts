@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import logger from './logger'
 
 export interface BuildResult {
     get rootProjectName(): string
@@ -13,7 +14,8 @@ export interface BuildResult {
 }
 
 export function loadBuildResults(): BuildResult[] {
-    const buildResultsDir = path.resolve(process.env['RUNNER_TEMP']!, '.build-results')
+    logger.info('Loading build results')
+    const buildResultsDir = path.resolve('.build-results')
     if (!fs.existsSync(buildResultsDir)) {
         return []
     }

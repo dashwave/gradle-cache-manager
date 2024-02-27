@@ -37,8 +37,8 @@ export async function restore(userHome: string, gradleUserHome: string, cacheLis
             logger.info('Gradle User Home already exists: will not restore from cache.')
             // Initialize pre-existing Gradle User Home.
             gradleStateCache.init()
-            cacheListener.cacheDisabled = true
-            cacheListener.cacheDisabledReason = 'disabled due to pre-existing Gradle User Home'
+            logger.info("Restoring extract cache entries")
+            await gradleStateCache.afterRestore(cacheListener)
             return
         }
         logger.info('Gradle User Home already exists: will overwrite with cached contents.')
@@ -69,17 +69,17 @@ export async function save(
     userHome: string,
     gradleUserHome: string,
     cacheListener: CacheListener,
-    daemonController: DaemonController
+    // daemonController: DaemonController
 ): Promise<void> {
     if (isCacheDisabled()) {
         logger.info('Cache is disabled: will not save state for later builds.')
         return
     }
 
-    if (!state.get(CACHE_RESTORED_VAR)) {
-        logger.info('Cache will not be saved: not restored in main action step.')
-        return
-    }
+    // if (!state.get(CACHE_RESTORED_VAR)) {
+    //     logger.info('Cache will not be saved: not restored in main action step.')
+    //     return
+    // }
 
     if (isCacheReadOnly()) {
         logger.info('Cache is read-only: will not save state for use in subsequent builds.')
@@ -87,7 +87,7 @@ export async function save(
         return
     }
 
-    await daemonController.stopAllDaemons()
+    // await daemonController.stopAllDaemons()
 
     if (isCacheCleanupEnabled()) {
         logger.info('Forcing cache cleanup.')

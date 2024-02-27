@@ -16,4 +16,8 @@ inputs:
   dependency-graph: disabled
   dependency-graph-continue-on-failure: "false"
   gradle-user-home: "build-cache"
-  
+  cache-shared-directory: /Users/burnerlee/test-shared-cache
+  cache-manager-endpoint: http://localhost:5678
+  project-directory: /Users/burnerlee/Projects/random/yetCalc
+  project-name: yetCalc
+  project-branch: main

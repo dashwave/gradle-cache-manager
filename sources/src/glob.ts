@@ -49,7 +49,7 @@ class Globber {
 
         return fg(effectivePatterns, {
             dot: true, // Example option, include more as needed
-            ...this.options
+            onlyFiles: true,            
         })
     }
 
@@ -60,7 +60,7 @@ class Globber {
             effectivePatterns = this.addImplicitDescendants(this.patterns)
         }
 
-        for await (const entry of fg.stream(effectivePatterns, {dot: true, ...this.options})) {
+        for await (const entry of fg.stream(effectivePatterns, {dot: true})) {
             yield entry as string
         }
     }

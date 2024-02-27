@@ -10,6 +10,7 @@ import {META_FILE_DIR} from './cache-base'
 import {CacheEntryListener, CacheListener} from './cache-reporting'
 import {cacheDebug, getCacheKeyPrefix, hashFileNames, restoreCache, saveCache, tryDelete} from './cache-utils'
 import {BuildResult, loadBuildResults} from './build-results'
+import { log } from 'console'
 
 const SKIP_RESTORE_VAR = 'GRADLE_BUILD_ACTION_SKIP_RESTORE'
 
@@ -146,7 +147,7 @@ abstract class AbstractEntryExtractor {
     async extract(listener: CacheListener): Promise<void> {
         // Load the cache entry definitions (from config) and the previously restored entries (from persisted metadata file)
         const cacheEntryDefinitions = this.getExtractedCacheEntryDefinitions()
-        cacheDebug(
+        logger.info(
             `Extracting cache entries for ${this.extractorName}: ${JSON.stringify(cacheEntryDefinitions, null, 2)}`
         )
 
@@ -159,16 +160,17 @@ abstract class AbstractEntryExtractor {
             const pattern = cacheEntryDefinition.pattern
 
             if (cacheEntryDefinition.notCacheableReason) {
+                logger.info(`Not saving ${artifactType} as it is not cacheable: ${cacheEntryDefinition.notCacheableReason}`)
                 listener.entry(pattern).markNotSaved(cacheEntryDefinition.notCacheableReason)
                 continue
             }
 
             // Find all matching files for this cache entry definition
             const globber = await glob.create(pattern, {
-                implicitDescendants: false
+                implicitDescendants: true
             })
             const matchingFiles = await globber.glob()
-
+            // logger.info(`Found ${matchingFiles.length} files matching ${pattern} for ${artifactType}: ${matchingFiles}`)
             if (matchingFiles.length === 0) {
                 cacheDebug(`No files found to cache for ${artifactType}`)
                 continue
@@ -225,12 +227,13 @@ abstract class AbstractEntryExtractor {
             x => x.artifactType === artifactType && x.pattern === pattern
         )?.cacheKey
 
+        logger.info(`cachekey for ${artifactType} is ${cacheKey} for files: ${matchingFiles.length}`)
         if (previouslyRestoredKey === cacheKey) {
             cacheDebug(`No change to previously restored ${artifactType}. Not saving.`)
             entryListener.markNotSaved('contents unchanged')
         } else {
             logger.info(`Caching ${artifactType} with path '${pattern}' and cache key: ${cacheKey}`)
-            await saveCache([pattern], cacheKey, entryListener)
+            await saveCache(matchingFiles, cacheKey, entryListener)
         }
 
         for (const file of matchingFiles) {
@@ -242,10 +245,11 @@ abstract class AbstractEntryExtractor {
 
     protected createCacheKeyFromFileNames(artifactType: string, files: string[]): string {
         const cacheKeyPrefix = getCacheKeyPrefix()
-        const relativeFiles = files.map(x => path.relative(this.gradleUserHome, x))
+        const sortedFiles = files.sort()
+        const relativeFiles = sortedFiles.map(x => path.relative(this.gradleUserHome, x))
         const key = hashFileNames(relativeFiles)
 
-        cacheDebug(`Generating cache key for ${artifactType} from file names: ${relativeFiles}`)
+        // cacheDebug(`Generating cache key for ${artifactType} from file names: ${relativeFiles}`)
 
         return `${cacheKeyPrefix}${artifactType}-${key}`
     }
@@ -254,7 +258,7 @@ abstract class AbstractEntryExtractor {
         const cacheKeyPrefix = getCacheKeyPrefix()
         const key = await glob.hashFiles(pattern)
 
-        cacheDebug(`Generating cache key for ${artifactType} from files matching: ${pattern}`)
+        // cacheDebug(`Generating cache key for ${artifactType} from files matching: ${pattern}`)
 
         return `${cacheKeyPrefix}${artifactType}-${key}`
     }
@@ -322,7 +326,7 @@ export class GradleHomeEntryExtractor extends AbstractEntryExtractor {
     private async deleteWrapperZips(): Promise<void> {
         const wrapperZips = path.resolve(this.gradleUserHome, 'wrapper/dists/*/*/*.zip')
         const globber = await glob.create([wrapperZips], {
-            implicitDescendants: false
+            implicitDescendants: true
         })
 
         for (const wrapperZip of await globber.glob()) {
@@ -353,11 +357,11 @@ export class GradleHomeEntryExtractor extends AbstractEntryExtractor {
 
         return [
             entryDefinition('generated-gradle-jars', ['caches/*/generated-gradle-jars/*.jar'], false),
-            entryDefinition('wrapper-zips', ['wrapper/dists/*/*/'], false), // Each wrapper directory cached separately
-            entryDefinition('java-toolchains', ['jdks/*/'], false), // Each extracted JDK cached separately
-            entryDefinition('dependencies', ['caches/modules-*/files-*/*/*/*/*'], true),
-            entryDefinition('instrumented-jars', ['caches/jars-*/*'], true),
-            entryDefinition('kotlin-dsl', ['caches/*/kotlin-dsl/*/*'], true)
+            entryDefinition('wrapper-zips', ['wrapper/dists'], false), // Each wrapper directory cached separately
+            entryDefinition('java-toolchains', ['jdks'], false), // Each extracted JDK cached separately
+            entryDefinition('dependencies', ['caches/modules-*/files-*'], true),
+            entryDefinition('instrumented-jars', ['caches/jars-*'], true),
+            entryDefinition('kotlin-dsl', ['caches/*/kotlin-dsl'], true)
         ]
     }
 }

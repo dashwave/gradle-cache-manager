@@ -10,6 +10,7 @@ import * as params from './input-params'
 
 import {CacheEntryListener} from './cache-reporting'
 import logger from './logger'
+import state from './state'
 
 const CACHE_PROTOCOL_VERSION = 'v9-'
 
@@ -81,7 +82,8 @@ export class CacheKey {
  * - Any previous key for this cache on the current OS
  */
 export function generateCacheKey(cacheName: string): CacheKey {
-    return new CacheKey("aviral", [])
+    const cacheKey = `${state.getInput("project-name")}-${state.getInput("project-branch")}`
+    return new CacheKey(cacheKey, [])
     // const cacheKeyBase = `${getCacheKeyPrefix()}${CACHE_PROTOCOL_VERSION}${cacheName}`
 
     // // At the most general level, share caches for all executions on the same OS
@@ -182,11 +184,7 @@ export async function saveCache(cachePath: string[], cacheKey: string, listener:
 }
 
 export function cacheDebug(message: string): void {
-    if (isCacheDebuggingEnabled()) {
-        logger.info(message)
-    } else {
-        logger.debug(message)
-    }
+    logger.info(message)
 }
 
 export function handleCacheFailure(error: unknown, message: string): void {
@@ -199,7 +197,7 @@ export function handleCacheFailure(error: unknown, message: string): void {
         logger.info(`${message}: ${error}`)
     } else {
         // Warn on all other errors
-        logger.warning(`${message}: ${error}`)
+        logger.error(`${message}: ${error}`)
         if (error instanceof Error && error.stack) {
             cacheDebug(error.stack)
         }
