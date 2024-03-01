@@ -9,6 +9,7 @@ import path from 'path';
 import { int } from 'aws-sdk/clients/datapipeline';
 import { cat } from 'shelljs';
 import fetch from 'node-fetch';
+import { tryDelete } from '../cache-utils';
 
 export class ValidationError extends Error { }
 export class ReserveCacheError extends Error { }
@@ -49,6 +50,9 @@ export async function restoreCache(paths: string[], primaryKey: string, restoreK
                                 });
                             }
                         })
+                        for (const file of srcFiles) {
+                            await tryDelete(file)
+                        }
                         logger.info("restored cache to " + gradleUserHome)
                         logger.info("time taken to restore cache: " + (Date.now() - timeCpStarted) + "ms")
 
