@@ -73,7 +73,7 @@ export class GradleStateCache {
         try {
             await this.afterRestore(listener)
         } catch (error) {
-            logger.warning(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`)
+            logger.error(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`)
         }
     }
 
@@ -115,7 +115,7 @@ export class GradleStateCache {
         try {
             await this.beforeSave(listener)
         } catch (error) {
-            logger.warning(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`)
+            logger.error(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`)
             return
         }
 

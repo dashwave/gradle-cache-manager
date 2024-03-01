@@ -128,7 +128,8 @@ export async function saveCache(paths: string[], key: string): Promise<CacheEntr
 
     // fs.unlinkSync(zipFileName);
     const cacheSharedDirectory = state.getInput("cache-shared-directory")!;
-    const cachePath = path.resolve(cacheSharedDirectory, key);
+
+    const cachePath = path.resolve(cacheSharedDirectory, "tmp",`${key}-${Date.now()}`);
 
     const filenames = paths.map(p => path.relative(gradleUserHome, p)); // Remove the user home from the path
     // Append files to the archive

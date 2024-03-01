@@ -21,7 +21,7 @@ export class DaemonController {
         for (const gradleHome of this.gradleHomes) {
             const executable = path.resolve(gradleHome, 'bin', 'gradle')
             if (!fs.existsSync(executable)) {
-                logger.warning(`Gradle executable not found at ${executable}. Could not stop Gradle daemons.`)
+                logger.error(`Gradle executable not found at ${executable}. Could not stop Gradle daemons.`)
                 continue
             }
             logger.info(`Stopping Gradle daemons for ${gradleHome}`)

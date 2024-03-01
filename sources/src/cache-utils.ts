@@ -223,7 +223,7 @@ export async function tryDelete(file: string): Promise<void> {
             return
         } catch (error) {
             if (attempt === maxAttempts) {
-                logger.warning(`Failed to delete ${file}, which will impact caching. 
+                logger.error(`Failed to delete ${file}, which will impact caching. 
 It is likely locked by another process. Output of 'jps -ml':
 ${await getJavaProcesses()}`)
                 throw error

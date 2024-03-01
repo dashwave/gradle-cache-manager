@@ -95,7 +95,7 @@ export async function save(
         try {
             await cacheCleaner.forceCleanup()
         } catch (e) {
-            logger.warning(`Cache cleanup failed. Will continue. ${String(e)}`)
+            logger.error(`Cache cleanup failed. Will continue. ${String(e)}`)
         }
     }
 

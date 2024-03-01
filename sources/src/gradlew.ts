@@ -38,7 +38,7 @@ function verifyIsExecutableScript(toExecute: string): void {
     try {
         fs.accessSync(toExecute, fs.constants.X_OK)
     } catch (err) {
-        logger.warning(
+        logger.error(
             `Gradle wrapper script '${toExecute}' is not executable. Action will set executable permission and continue.`
         )
         fs.chmodSync(toExecute, '755')

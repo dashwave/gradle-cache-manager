@@ -42,7 +42,7 @@ async function resolveGradleVersion(version: string): Promise<GradleVersionInfo>
         case 'current':
             return gradleCurrent()
         case 'rc':
-            logger.warning(`Specifying gradle-version 'rc' has been deprecated. Use 'release-candidate' instead.`)
+            logger.error(`Specifying gradle-version 'rc' has been deprecated. Use 'release-candidate' instead.`)
             return gradleReleaseCandidate()
         case 'release-candidate':
             return gradleReleaseCandidate()

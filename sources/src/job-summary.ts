@@ -58,7 +58,7 @@ ${jobSummary}`
         })
     } catch (error) {
         if (error instanceof RequestError) {
-            logger.warning(buildWarningMessage(error))
+            logger.error(buildWarningMessage(error))
         } else {
             throw error
         }

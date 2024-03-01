@@ -12,7 +12,7 @@ import {PostActionJobFailure} from '../errors'
  * The main entry point for the action, called by Github Actions for the step.
  */
 function handleFailure(error: unknown): void {
-    logger.warning(`Unhandled error in Gradle post-action - job will continue: ${error}`)
+    logger.error(`Unhandled error in Gradle post-action - job will continue: ${error}`)
     if (error instanceof Error && error.stack) {
         logger.info(error.stack)
     }
