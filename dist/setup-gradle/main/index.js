@@ -68632,7 +68632,7 @@ class GradleStateCache {
                 yield this.afterRestore(listener);
             }
             catch (error) {
-                logger_1.default.warning(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`);
+                logger_1.default.error(`Restore ${this.cacheDescription} failed in 'afterRestore': ${error}`);
             }
         });
     }
@@ -68665,7 +68665,7 @@ class GradleStateCache {
                 yield this.beforeSave(listener);
             }
             catch (error) {
-                logger_1.default.warning(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`);
+                logger_1.default.error(`Save ${this.cacheDescription} failed in 'beforeSave': ${error}`);
                 return;
             }
             logger_1.default.info(`Caching ${this.cacheDescription} with cache key: ${cacheKey}`);
@@ -69694,7 +69694,7 @@ function tryDelete(file) {
             }
             catch (error) {
                 if (attempt === maxAttempts) {
-                    logger_1.default.warning(`Failed to delete ${file}, which will impact caching. 
+                    logger_1.default.error(`Failed to delete ${file}, which will impact caching. 
 It is likely locked by another process. Output of 'jps -ml':
 ${yield getJavaProcesses()}`);
                     throw error;
@@ -69808,7 +69808,7 @@ function save(userHome, gradleUserHome, cacheListener) {
                 yield cacheCleaner.forceCleanup();
             }
             catch (e) {
-                logger_1.default.warning(`Cache cleanup failed. Will continue. ${String(e)}`);
+                logger_1.default.error(`Cache cleanup failed. Will continue. ${String(e)}`);
             }
         }
         return new cache_base_1.GradleStateCache(userHome, gradleUserHome).save(cacheListener);
@@ -70277,6 +70277,7 @@ const logger_1 = __importDefault(__nccwpck_require__(4636));
 const state_1 = __importDefault(__nccwpck_require__(9738));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const node_fetch_1 = __importDefault(__nccwpck_require__(467));
+const cache_utils_1 = __nccwpck_require__(1678);
 class ValidationError extends Error {
 }
 exports.ValidationError = ValidationError;
@@ -70314,6 +70315,9 @@ function restoreCache(paths, primaryKey, restoreKeys = []) {
                                     });
                                 }
                             });
+                            for (const file of srcFiles) {
+                                yield (0, cache_utils_1.tryDelete)(file);
+                            }
                             logger_1.default.info("restored cache to " + gradleUserHome);
                             logger_1.default.info("time taken to restore cache: " + (Date.now() - timeCpStarted) + "ms");
                             return new CacheEntry(key, 0);
@@ -70352,7 +70356,7 @@ function saveCache(paths, key) {
         logger_1.default.info(`Creating cache for key: ${key} for files: ${paths}`);
         const gradleUserHome = state_1.default.get("gradle-user-home") || '';
         const cacheSharedDirectory = state_1.default.getInput("cache-shared-directory");
-        const cachePath = path_1.default.resolve(cacheSharedDirectory, key);
+        const cachePath = path_1.default.resolve(cacheSharedDirectory, "tmp", `${key}-${Date.now()}`);
         const filenames = paths.map(p => path_1.default.relative(gradleUserHome, p));
         const timeCpStarted = Date.now();
         paths.forEach((p, idx) => {
@@ -70576,7 +70580,7 @@ exports.run = void 0;
 const setupGradle = __importStar(__nccwpck_require__(8652));
 const logger_1 = __importDefault(__nccwpck_require__(4636));
 function handleFailure(error) {
-    logger_1.default.warning(`Unhandled error in Gradle post-action - job will continue: ${error}`);
+    logger_1.default.error(`Unhandled error in Gradle post-action - job will continue: ${error}`);
     if (error instanceof Error && error.stack) {
         logger_1.default.info(error.stack);
     }

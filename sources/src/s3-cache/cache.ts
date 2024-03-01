@@ -50,9 +50,7 @@ export async function restoreCache(paths: string[], primaryKey: string, restoreK
                                 });
                             }
                         })
-                        for (const file of srcFiles) {
-                            await tryDelete(file)
-                        }
+                        fs.rmSync(cachePath, { recursive: true })
                         logger.info("restored cache to " + gradleUserHome)
                         logger.info("time taken to restore cache: " + (Date.now() - timeCpStarted) + "ms")
 
