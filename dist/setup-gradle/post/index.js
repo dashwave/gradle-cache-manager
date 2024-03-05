@@ -70301,7 +70301,6 @@ const logger_1 = __importDefault(__nccwpck_require__(4636));
 const state_1 = __importDefault(__nccwpck_require__(9738));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const node_fetch_1 = __importDefault(__nccwpck_require__(467));
-const cache_utils_1 = __nccwpck_require__(1678);
 class ValidationError extends Error {
 }
 exports.ValidationError = ValidationError;
@@ -70325,8 +70324,9 @@ function restoreCache(paths, primaryKey, restoreKeys = []) {
                 const data = yield response.json();
                 switch (statusCode) {
                     case 200:
-                        const cachePath = data.path;
+                        const cachePath = String(data.path);
                         if (fs_1.default.existsSync(cachePath)) {
+                            logger_1.default.info("restoring cache from " + cachePath);
                             const metadataPath = data.metadata_file_path;
                             const metadata = JSON.parse(fs_1.default.readFileSync(metadataPath, 'utf8'));
                             const srcFiles = metadata.files.map((file) => path_1.default.resolve(cachePath, file));
@@ -70339,9 +70339,8 @@ function restoreCache(paths, primaryKey, restoreKeys = []) {
                                     });
                                 }
                             });
-                            for (const file of srcFiles) {
-                                yield (0, cache_utils_1.tryDelete)(file);
-                            }
+                            fs_1.default.rmSync(cachePath, { recursive: true });
+                            logger_1.default.info("removing temp cache path", cachePath);
                             logger_1.default.info("restored cache to " + gradleUserHome);
                             logger_1.default.info("time taken to restore cache: " + (Date.now() - timeCpStarted) + "ms");
                             return new CacheEntry(key, 0);

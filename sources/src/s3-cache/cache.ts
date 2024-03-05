@@ -35,8 +35,9 @@ export async function restoreCache(paths: string[], primaryKey: string, restoreK
             const data = await response.json();
             switch (statusCode) {
                 case 200:
-                    const cachePath = data.path;
+                    const cachePath = String(data.path);
                     if (fs.existsSync(cachePath)) {
+                        logger.info("restoring cache from " + cachePath)
                         const metadataPath = data.metadata_file_path;
                         const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
                         const srcFiles = metadata.files.map((file: string) => path.resolve(cachePath, file));
@@ -51,6 +52,7 @@ export async function restoreCache(paths: string[], primaryKey: string, restoreK
                             }
                         })
                         fs.rmSync(cachePath, { recursive: true })
+                        logger.info("removing temp cache path", cachePath)
                         logger.info("restored cache to " + gradleUserHome)
                         logger.info("time taken to restore cache: " + (Date.now() - timeCpStarted) + "ms")
 
