@@ -70295,7 +70295,16 @@ function restoreCache(paths, primaryKey, restoreKeys = []) {
         for (const key of keys) {
             try {
                 const cacheManagerUrl = state_1.default.getInput("cache-manager-endpoint");
-                const response = yield (0, node_fetch_1.default)(`${cacheManagerUrl}/api/v1/cache/restore/${key}`);
+                const postData = {
+                    "key": key,
+                };
+                const response = yield (0, node_fetch_1.default)(`${cacheManagerUrl}/api/v1/cache/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(postData),
+                });
                 const statusCode = response.status;
                 const data = yield response.json();
                 switch (statusCode) {

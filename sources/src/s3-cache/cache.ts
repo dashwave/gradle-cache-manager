@@ -30,7 +30,16 @@ export async function restoreCache(paths: string[], primaryKey: string, restoreK
     for (const key of keys) {
         try {
             const cacheManagerUrl = state.getInput("cache-manager-endpoint")!;
-            const response = await fetch(`${cacheManagerUrl}/api/v1/cache/restore/${key}`);
+            const postData = {
+                "key": key,
+            }
+            const response = await fetch(`${cacheManagerUrl}/api/v1/cache/restore`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(postData),
+            });
             const statusCode = response.status;
             const data = await response.json();
             switch (statusCode) {
